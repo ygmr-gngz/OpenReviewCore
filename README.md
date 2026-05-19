@@ -188,6 +188,7 @@ openreviewcore/
 │   │   ├── risk_engine.py   # Ağırlıklı risk skoru hesaplama
 │   │   ├── llm_service.py   # LLM entegrasyonu (yakında aktif)
 │   │   └── chat_service.py  # Analiz sonrası sohbet katmanı (yakında)
+        └── github_service.py# GitHub repo dosya çekme servisi
 │   │
 │   ├── storage/
 │   │   └── memory_store.py  # Geçici analiz saklama (Faz 9'da PostgreSQL)
