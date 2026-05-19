@@ -5,9 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings, get_status
 from app.schemas import AnalyzeRequest, ChatRequest
-from app.services.analyzer import analyze_code
-from app.services.chat_service import chat_with_analysis
+from app.services.analyzer import analyze_code, analyze_repo
 from app.storage.memory_store import MemoryStore
+from app.services.chat_service import chat_with_analysis
 
 
 # ─────────────────────────────────────────
@@ -32,7 +32,6 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Kapanış temizliği — ileride DB bağlantıları burada kapatılır
     app.state.store.clear()
 
 
@@ -69,7 +68,6 @@ def root():
     """
     API'nin çalışıp çalışmadığını hızlıca kontrol eder.
     """
-
     return {
         "message": "OpenReviewCore API is running",
         "version": "0.1.0",
@@ -88,7 +86,6 @@ def health_check():
     - Aktif LLM provider
     - Debug modu
     """
-
     return {
         "status": "ok",
         "services": get_status(settings),
@@ -96,13 +93,13 @@ def health_check():
 
 
 # ─────────────────────────────────────────
-# ANALİZ ENDPOINTİ — Faz 1-6
+# ANALİZ ENDPOINTİ — Faz 1-7
 # ─────────────────────────────────────────
 
 @app.post("/analyze", tags=["Analiz"])
 def analyze(request: AnalyzeRequest):
     """
-    Python kodunu analiz eder ve risk raporu döndürür.
+    Python kodunu veya GitHub reposunu analiz eder, risk raporu döndürür.
 
     Desteklenen modlar:
     - static : Sadece statik analiz (Radon, Ruff, Bandit)
@@ -111,16 +108,36 @@ def analyze(request: AnalyzeRequest):
 
     Desteklenen girdi tipleri:
     - code        : Direkt kod metni
-    - github_repo : GitHub repo URL'i (Faz 7)
+    - github_repo : GitHub repo URL'i
     """
 
-    # GitHub repo analizi henüz aktif değil
+    # ── GitHub repo analizi ──────────────────
     if request.input_type == "github_repo":
-        raise HTTPException(
-            status_code=501,
-            detail="GitHub repo analizi henüz desteklenmiyor. Yakında eklenecek.",
+        if not request.github_url:
+            raise HTTPException(
+                status_code=400,
+                detail="input_type 'github_repo' seçildiğinde github_url zorunludur.",
+            )
+
+        result = analyze_repo(
+            github_url      = request.github_url,
+            max_files       = request.max_files or 25,
+            file_extensions = request.file_extensions or [".py"],
+            analysis_mode   = request.analysis_mode,
+            llm_provider    = request.llm_provider,
         )
 
+        app.state.store.save(result)
+
+        return {
+            "message":       "Repo analizi tamamlandı.",
+            "input_type":    request.input_type,
+            "analysis_mode": request.analysis_mode,
+            "llm_provider":  request.llm_provider,
+            "result":        result,
+        }
+
+    # ── Direkt kod analizi ───────────────────
     if not request.code or not request.code.strip():
         raise HTTPException(
             status_code=400,
@@ -134,20 +151,19 @@ def analyze(request: AnalyzeRequest):
         )
 
     result = analyze_code(
-        code=request.code,
-        analysis_mode=request.analysis_mode,
-        llm_provider=request.llm_provider,
+        code          = request.code,
+        analysis_mode = request.analysis_mode,
+        llm_provider  = request.llm_provider,
     )
 
-    # Analizi memory store'a kaydet — Faz 9'da PostgreSQL'e taşınacak
     app.state.store.save(result)
 
     return {
-        "message": "Kod analizi tamamlandı.",
-        "input_type": request.input_type,
+        "message":       "Kod analizi tamamlandı.",
+        "input_type":    request.input_type,
         "analysis_mode": request.analysis_mode,
-        "llm_provider": request.llm_provider,
-        "result": result,
+        "llm_provider":  request.llm_provider,
+        "result":        result,
     }
 
 
@@ -168,7 +184,6 @@ def chat(request: ChatRequest):
     - "eval kullanımı nasıl düzeltilir?"
     """
 
-    # Analizi store'dan çek
     analysis = app.state.store.get(request.analysis_id)
 
     if not analysis:
@@ -178,15 +193,15 @@ def chat(request: ChatRequest):
         )
 
     response = chat_with_analysis(
-        message=request.message,
-        analysis=analysis,
-        llm_provider=request.llm_provider,
+        message       = request.message,
+        analysis      = analysis,
+        llm_provider  = request.llm_provider,
     )
 
     return {
         "analysis_id": request.analysis_id,
-        "message": request.message,
-        "response": response,
+        "message":     request.message,
+        "response":    response,
     }
 
 
@@ -206,7 +221,7 @@ def get_history(limit: int = 10):
     history = app.state.store.list(limit=limit)
 
     return {
-        "count": len(history),
+        "count":    len(history),
         "analyses": history,
     }
 
