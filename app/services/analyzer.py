@@ -58,6 +58,11 @@ def analyze_repo(
     if file_extensions is None:
         file_extensions = [".py"]
 
+    # Ollama Railway'de çalışmaz — repo analizinde static'e düş
+    if llm_provider == "ollama":
+        analysis_mode = "static"
+        llm_provider  = "none"
+
     # 1 — Dosyaları GitHub'dan çek
     repo_data = fetch_repo_files(
         github_url      = github_url,
@@ -109,9 +114,9 @@ def analyze_repo(
     # 3 — Repo geneli özet hesapla
     repo_summary = _calculate_repo_summary(file_results)
 
-    # 4 — LLM repo özeti üret (hybrid/llm modunda)
+    # 4 — Repo geneli LLM özeti üret
     repo_llm_summary = None
-    if analysis_mode in ("llm", "hybrid") and llm_provider != "none":
+    if analysis_mode in ("llm", "hybrid") and llm_provider not in ("none", "ollama"):
         repo_llm_summary = _generate_repo_llm_summary(
             file_results = file_results,
             repo_summary = repo_summary,
@@ -119,11 +124,11 @@ def analyze_repo(
         )
 
     return {
-        "owner":           repo_data["owner"],
-        "repo":            repo_data["repo"],
-        "branch":          repo_data["branch"],
-        "analysis_mode":   analysis_mode,
-        "llm_provider":    llm_provider,
+        "owner":             repo_data["owner"],
+        "repo":              repo_data["repo"],
+        "branch":            repo_data["branch"],
+        "analysis_mode":     analysis_mode,
+        "llm_provider":      llm_provider,
         "stats": {
             "total_found":   repo_data["total_found"],
             "fetched":       repo_data["fetched"],
@@ -131,9 +136,9 @@ def analyze_repo(
             "skipped":       len(skipped),
             "skipped_files": skipped,
         },
-        "repo_summary":     repo_summary,
-        "repo_llm_summary": repo_llm_summary,
-        "file_results":     file_results,
+        "repo_summary":      repo_summary,
+        "repo_llm_summary":  repo_llm_summary,
+        "file_results":      file_results,
     }
 
 
@@ -204,7 +209,6 @@ def _generate_repo_llm_summary(
     repo geneli LLM özeti üretir.
     """
 
-    # En riskli 3 dosyayı seç
     sorted_files = sorted(
         file_results,
         key=lambda f: f["static_result"]["risk_analysis"]["final_risk_score"],
@@ -212,7 +216,6 @@ def _generate_repo_llm_summary(
     )
     top_files = sorted_files[:3]
 
-    # Birleşik metrik özeti oluştur
     combined_metrics = {
         "risk_analysis": {
             "final_risk_score": repo_summary.get("average_risk_score", 0),
@@ -229,9 +232,11 @@ def _generate_repo_llm_summary(
             "average_complexity": _avg_metric(top_files, "complexity", "average_complexity"),
         },
         "security_patterns": {
-            "detected_patterns": _collect_patterns(top_files),
+            "detected_patterns":    _collect_patterns(top_files),
             "security_issue_count": sum(
-                f["static_result"]["metrics"].get("security_patterns", {}).get("security_issue_count", 0)
+                f["static_result"]["metrics"]
+                .get("security_patterns", {})
+                .get("security_issue_count", 0)
                 for f in top_files
             ),
         },
@@ -240,11 +245,13 @@ def _generate_repo_llm_summary(
         },
     }
 
-    # En riskli dosyanın kodunu özet olarak gönder
-    top_code = ""
-    if top_files:
-        top_path = top_files[0]["path"]
-        top_code = f"# En riskli dosya: {top_path}\n# (İçerik repo analizinde ayrı ayrı tarandı)"
+    top_path = top_files[0]["path"] if top_files else "bilinmiyor"
+    top_code = (
+        f"# Repo: en riskli dosya → {top_path}\n"
+        f"# Toplam analiz edilen dosya: {repo_summary.get('total_files', '?')}\n"
+        f"# Repo risk seviyesi: {repo_summary.get('repo_risk_level', '?')}\n"
+        f"# (Dosya içerikleri repo analizinde ayrı ayrı tarandı)"
+    )
 
     return analyze_with_llm(
         code     = top_code,
@@ -259,7 +266,9 @@ def _generate_repo_llm_summary(
 
 def _avg_breakdown(files: list[dict], key: str) -> float:
     vals = [
-        f["static_result"]["risk_analysis"].get("risk_breakdown", {}).get(key, 0)
+        f["static_result"]["risk_analysis"]
+        .get("risk_breakdown", {})
+        .get(key, 0)
         for f in files
         if "static_result" in f
     ]
@@ -268,7 +277,9 @@ def _avg_breakdown(files: list[dict], key: str) -> float:
 
 def _avg_metric(files: list[dict], section: str, key: str) -> float:
     vals = [
-        f["static_result"]["metrics"].get(section, {}).get(key, 0)
+        f["static_result"]["metrics"]
+        .get(section, {})
+        .get(key, 0)
         for f in files
         if "static_result" in f
     ]

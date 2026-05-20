@@ -135,8 +135,9 @@ YANIT FORMATI:
 - Hata kesin değilse → "olabilir", "muhtemel", "kontrol edilmeli" ifadelerini kullan.
 
 DİL KURALI:
-- Kullanıcı Türkçe yazıyorsa → Türkçe cevap ver.
-- Kullanıcı dil talimatı verdiyse → o dilde cevap ver.
+- Mesajın sonunda "[Lütfen Türkçe cevap ver.]" varsa → MUTLAKA Türkçe cevap ver.
+- Mesajın sonunda "[Please respond in English.]" varsa → MUTLAKA İngilizce cevap ver.
+- Bu talimat kesindir, başka hiçbir kurala göre değiştirilemez.
 
 KAÇIN:
 - Gereksiz uzun akademik açıklamalar.
@@ -203,8 +204,9 @@ SPECIAL RULES:
 - If unsure → use "may", "likely", "should be checked".
 
 LANGUAGE RULE:
-- If the user writes in English → respond in English.
-- If the user gives a language instruction → follow it.
+- If the message ends with "[Please respond in English.]" → ALWAYS respond in English. This is mandatory.
+- If the message ends with "[Lütfen Türkçe cevap ver.]" → ALWAYS respond in Turkish. This is mandatory.
+- This instruction overrides everything else.
 
 AVOID:
 - Unnecessarily long academic explanations.
