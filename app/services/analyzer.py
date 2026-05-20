@@ -14,15 +14,6 @@ def analyze_code(
     analysis_mode: str = "static",
     llm_provider: str = "none",
 ) -> dict:
-    """
-    Tek bir kod bloğunu analiz eder.
-
-    Modlara göre davranış:
-    - static : sadece statik analiz
-    - llm    : statik analiz + LLM reasoning
-    - hybrid : statik analiz + LLM reasoning
-    """
-
     code = clean_code(code)
 
     if is_empty(code):
@@ -63,12 +54,6 @@ def analyze_repo(
     analysis_mode: str = "static",
     llm_provider: str = "none",
 ) -> dict:
-    """
-    GitHub repo'sundaki tüm Python dosyalarını analiz eder.
-
-    Her dosya ayrı ayrı analiz edilir.
-    Sonunda repo genelinde özet risk skoru üretilir.
-    """
 
     if file_extensions is None:
         file_extensions = [".py"]
@@ -111,13 +96,11 @@ def analyze_repo(
             },
         }
 
-        # LLM sadece hybrid/llm modunda ve dosya başına çalışır
-        # Büyük repolar için maliyetli olabilir — ileride batch yapılabilir
         if analysis_mode in ("llm", "hybrid"):
             llm_result = analyze_with_llm(
-                code      = code,
-                metrics   = file_entry["static_result"],
-                provider  = llm_provider,
+                code     = code,
+                metrics  = file_entry["static_result"],
+                provider = llm_provider,
             )
             file_entry["llm_result"] = llm_result
 
@@ -126,12 +109,21 @@ def analyze_repo(
     # 3 — Repo geneli özet hesapla
     repo_summary = _calculate_repo_summary(file_results)
 
+    # 4 — LLM repo özeti üret (hybrid/llm modunda)
+    repo_llm_summary = None
+    if analysis_mode in ("llm", "hybrid") and llm_provider != "none":
+        repo_llm_summary = _generate_repo_llm_summary(
+            file_results = file_results,
+            repo_summary = repo_summary,
+            provider     = llm_provider,
+        )
+
     return {
-        "owner":         repo_data["owner"],
-        "repo":          repo_data["repo"],
-        "branch":        repo_data["branch"],
-        "analysis_mode": analysis_mode,
-        "llm_provider":  llm_provider,
+        "owner":           repo_data["owner"],
+        "repo":            repo_data["repo"],
+        "branch":          repo_data["branch"],
+        "analysis_mode":   analysis_mode,
+        "llm_provider":    llm_provider,
         "stats": {
             "total_found":   repo_data["total_found"],
             "fetched":       repo_data["fetched"],
@@ -139,8 +131,9 @@ def analyze_repo(
             "skipped":       len(skipped),
             "skipped_files": skipped,
         },
-        "repo_summary":  repo_summary,
-        "file_results":  file_results,
+        "repo_summary":     repo_summary,
+        "repo_llm_summary": repo_llm_summary,
+        "file_results":     file_results,
     }
 
 
@@ -149,9 +142,6 @@ def analyze_repo(
 # ─────────────────────────────────────────
 
 def _calculate_repo_summary(file_results: list[dict]) -> dict:
-    """
-    Tüm dosyaların risk skorlarından repo geneli özet üretir.
-    """
 
     if not file_results:
         return {}
@@ -168,7 +158,6 @@ def _calculate_repo_summary(file_results: list[dict]) -> dict:
     avg_score = round(sum(scores) / len(scores), 2)
     max_score = max(scores)
 
-    # Repo risk seviyesi — en yüksek dosya skoru üzerinden belirlenir
     if max_score >= 90:
         repo_risk_level = "critical"
     elif max_score >= 75:
@@ -178,7 +167,6 @@ def _calculate_repo_summary(file_results: list[dict]) -> dict:
     else:
         repo_risk_level = "low"
 
-    # En riskli 3 dosya
     sorted_files = sorted(
         file_results,
         key=lambda f: f["static_result"]["risk_analysis"]["final_risk_score"],
@@ -200,3 +188,111 @@ def _calculate_repo_summary(file_results: list[dict]) -> dict:
         "riskiest_files":     riskiest,
         "total_files":        len(file_results),
     }
+
+
+# ─────────────────────────────────────────
+# REPO LLM ÖZETİ
+# ─────────────────────────────────────────
+
+def _generate_repo_llm_summary(
+    file_results: list[dict],
+    repo_summary: dict,
+    provider: str,
+) -> dict:
+    """
+    En riskli 3 dosyanın statik metriklerini birleştirip
+    repo geneli LLM özeti üretir.
+    """
+
+    # En riskli 3 dosyayı seç
+    sorted_files = sorted(
+        file_results,
+        key=lambda f: f["static_result"]["risk_analysis"]["final_risk_score"],
+        reverse=True,
+    )
+    top_files = sorted_files[:3]
+
+    # Birleşik metrik özeti oluştur
+    combined_metrics = {
+        "risk_analysis": {
+            "final_risk_score": repo_summary.get("average_risk_score", 0),
+            "risk_level":       repo_summary.get("repo_risk_level", "?"),
+            "risk_breakdown": {
+                "security_risk":        _avg_breakdown(top_files, "security_risk"),
+                "maintainability_risk": _avg_breakdown(top_files, "maintainability_risk"),
+                "complexity_risk":      _avg_breakdown(top_files, "complexity_risk"),
+                "bandit_risk":          _avg_breakdown(top_files, "bandit_risk"),
+                "ruff_risk":            _avg_breakdown(top_files, "ruff_risk"),
+            },
+        },
+        "complexity": {
+            "average_complexity": _avg_metric(top_files, "complexity", "average_complexity"),
+        },
+        "security_patterns": {
+            "detected_patterns": _collect_patterns(top_files),
+            "security_issue_count": sum(
+                f["static_result"]["metrics"].get("security_patterns", {}).get("security_issue_count", 0)
+                for f in top_files
+            ),
+        },
+        "bandit": {
+            "issues": _collect_bandit_issues(top_files),
+        },
+    }
+
+    # En riskli dosyanın kodunu özet olarak gönder
+    top_code = ""
+    if top_files:
+        top_path = top_files[0]["path"]
+        top_code = f"# En riskli dosya: {top_path}\n# (İçerik repo analizinde ayrı ayrı tarandı)"
+
+    return analyze_with_llm(
+        code     = top_code,
+        metrics  = combined_metrics,
+        provider = provider,
+    )
+
+
+# ─────────────────────────────────────────
+# YARDIMCI FONKSİYONLAR
+# ─────────────────────────────────────────
+
+def _avg_breakdown(files: list[dict], key: str) -> float:
+    vals = [
+        f["static_result"]["risk_analysis"].get("risk_breakdown", {}).get(key, 0)
+        for f in files
+        if "static_result" in f
+    ]
+    return round(sum(vals) / len(vals), 2) if vals else 0.0
+
+
+def _avg_metric(files: list[dict], section: str, key: str) -> float:
+    vals = [
+        f["static_result"]["metrics"].get(section, {}).get(key, 0)
+        for f in files
+        if "static_result" in f
+    ]
+    return round(sum(vals) / len(vals), 2) if vals else 0.0
+
+
+def _collect_patterns(files: list[dict]) -> list[str]:
+    patterns = set()
+    for f in files:
+        detected = (
+            f["static_result"]["metrics"]
+            .get("security_patterns", {})
+            .get("detected_patterns", [])
+        )
+        patterns.update(detected)
+    return list(patterns)
+
+
+def _collect_bandit_issues(files: list[dict]) -> list[dict]:
+    issues = []
+    for f in files:
+        issues.extend(
+            f["static_result"]["metrics"]
+            .get("bandit", {})
+            .get("issues", [])[:2]
+        )
+    return issues[:5]

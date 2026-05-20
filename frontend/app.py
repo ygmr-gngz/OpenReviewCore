@@ -11,6 +11,38 @@ st.set_page_config(
     layout="wide",
 )
 
+st.markdown("""
+<style>
+    [data-testid="stSidebar"] { background-color: #0f1117; }
+    [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
+    .stTabs [data-baseweb="tab"] {
+        background: #1e2130;
+        border-radius: 8px;
+        padding: 6px 16px;
+        color: #a0a0b0;
+    }
+    .stTabs [aria-selected="true"] {
+        background: #2d2b6b !important;
+        color: #c0bcff !important;
+    }
+    div[data-testid="metric-container"] {
+        background: #1e2130;
+        border-radius: 10px;
+        padding: 12px 16px;
+    }
+    .stTextArea textarea {
+        background: #1e2130 !important;
+        color: #e0e0e0 !important;
+        font-family: monospace;
+    }
+    .stTextInput input {
+        background: #1e2130 !important;
+        color: #e0e0e0 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 API_URL = st.secrets.get("API_URL", "https://openreviewcore-production.up.railway.app")
 
 
@@ -40,14 +72,15 @@ def call_chat(payload: dict) -> dict:
 # SESSION STATE
 # ─────────────────────────────────────────
 
-if "history" not in st.session_state:
-    st.session_state.history = []
-if "last_result" not in st.session_state:
-    st.session_state.last_result = None
-if "last_analysis_id" not in st.session_state:
-    st.session_state.last_analysis_id = None
-if "chat_messages" not in st.session_state:
-    st.session_state.chat_messages = []
+for key, default in [
+    ("history", []),
+    ("last_result", None),
+    ("last_analysis_id", None),
+    ("chat_messages", []),
+    ("chat_lang", "tr"),
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 
 # ─────────────────────────────────────────
@@ -55,7 +88,7 @@ if "chat_messages" not in st.session_state:
 # ─────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("### 🛡️ OpenReviewCore")
+    st.markdown("## 🛡️ OpenReviewCore")
     st.divider()
 
     analysis_mode = st.selectbox(
@@ -83,7 +116,6 @@ with st.sidebar:
         for item in st.session_state.history[-5:][::-1]:
             level   = item.get("risk_level", "?")
             name    = item.get("name", "analiz")
-            color   = {"low": "🟢", "medium": "🟡", "high": "🔴", "critical": "🔴"}.get(level, "⚪")
             sec     = item.get("security_level", level)
             sec_clr = {"low": "🟢", "medium": "🟡", "high": "🔴", "critical": "🔴"}.get(sec, "⚪")
             st.markdown(f"`{name}`  \n{sec_clr} güvenlik: **{sec}**")
@@ -104,7 +136,7 @@ with tab1:
         placeholder="def foo(x):\n    return eval(x)",
     )
 
-    if st.button("Analiz et", key="analyze_code"):
+    if st.button("🔍 Analiz et", key="analyze_code"):
         if not code_input.strip():
             st.warning("Kod boş olamaz.")
         else:
@@ -138,32 +170,31 @@ with tab1:
         metrics    = static.get("metrics", {})
         llm_result = result.get("llm_result", {})
 
-        st.divider()
-
-        # Üst metrik kartları
-        col1, col2, col3 = st.columns(3)
-        score = risk.get("final_risk_score", 0)
-        level = risk.get("risk_level", "?")
-        color = {"low": "🟢", "medium": "🟡", "high": "🔴", "critical": "🔴"}.get(level, "⚪")
-
-        col1.metric("Risk skoru", f"{score:.1f} / 100", delta=f"{color} {level}")
-        col2.metric("Cyclomatic CC", f"{metrics.get('complexity', {}).get('average_complexity', 0):.1f}")
-        col3.metric("Güvenlik bulgusu", metrics.get("security_patterns", {}).get("security_issue_count", 0))
-
-        # Risk dağılımı
-        st.markdown("**Risk dağılımı**")
-        c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric("Güvenlik",       f"{breakdown.get('security_risk', 0):.1f}")
-        c2.metric("Maintain.",      f"{breakdown.get('maintainability_risk', 0):.1f}")
-        c3.metric("Complexity",     f"{breakdown.get('complexity_risk', 0):.1f}")
-        c4.metric("Bandit",         f"{breakdown.get('bandit_risk', 0):.1f}")
-        c5.metric("Ruff",           f"{breakdown.get('ruff_risk', 0):.1f}")
-
-        # LLM açıklaması
-        if llm_result and llm_result.get("status") == "success":
+        # Repo sonucu varsa kod analizinde gösterme
+        if "repo_summary" not in result:
             st.divider()
-            st.markdown("**🤖 LLM analizi**")
-            st.markdown(llm_result.get("explanation", ""))
+
+            col1, col2, col3 = st.columns(3)
+            score = risk.get("final_risk_score", 0)
+            level = risk.get("risk_level", "?")
+            color = {"low": "🟢", "medium": "🟡", "high": "🔴", "critical": "🔴"}.get(level, "⚪")
+
+            col1.metric("Risk skoru", f"{score:.1f} / 100", delta=f"{color} {level}")
+            col2.metric("Cyclomatic CC", f"{metrics.get('complexity', {}).get('average_complexity', 0):.1f}")
+            col3.metric("Güvenlik bulgusu", metrics.get("security_patterns", {}).get("security_issue_count", 0))
+
+            st.markdown("**Risk dağılımı**")
+            c1, c2, c3, c4, c5 = st.columns(5)
+            c1.metric("Güvenlik",   f"{breakdown.get('security_risk', 0):.1f}")
+            c2.metric("Maintain.",  f"{breakdown.get('maintainability_risk', 0):.1f}")
+            c3.metric("Complexity", f"{breakdown.get('complexity_risk', 0):.1f}")
+            c4.metric("Bandit",     f"{breakdown.get('bandit_risk', 0):.1f}")
+            c5.metric("Ruff",       f"{breakdown.get('ruff_risk', 0):.1f}")
+
+            if llm_result and llm_result.get("status") == "success":
+                st.divider()
+                st.markdown("**🤖 LLM analizi**")
+                st.markdown(llm_result.get("explanation", ""))
 
 
 # ── TAB 2: REPO ANALİZİ ─────────────────
@@ -173,7 +204,7 @@ with tab2:
         placeholder="https://github.com/kullanici/repo",
     )
 
-    if st.button("Analiz et", key="analyze_repo"):
+    if st.button("🔍 Analiz et", key="analyze_repo"):
         if not github_url.strip():
             st.warning("URL boş olamaz.")
         else:
@@ -217,6 +248,14 @@ with tab2:
             col2.metric("Ortalama risk skoru", f"{repo_summary.get('average_risk_score', 0):.1f}")
             col3.metric("Analiz edilen dosya", repo_summary.get("total_files", 0))
 
+            # Repo LLM özeti
+            repo_llm = result.get("repo_llm_summary", {})
+            if repo_llm and repo_llm.get("status") == "success":
+                st.divider()
+                st.markdown("**🤖 Repo LLM analizi**")
+                st.markdown(repo_llm.get("explanation", ""))
+
+            st.divider()
             st.markdown("**En riskli dosyalar**")
             for f in repo_summary.get("riskiest_files", []):
                 lvl = f.get("risk_level", "?")
@@ -229,22 +268,38 @@ with tab3:
     if not st.session_state.last_analysis_id:
         st.info("Önce bir analiz yap, sonra sohbet edebilirsin.")
     else:
-        st.caption(f"Analiz ID: `{st.session_state.last_analysis_id}`")
+        col_lang1, col_lang2, _ = st.columns([1, 1, 4])
+        if col_lang1.button("🇹🇷 Türkçe", use_container_width=True):
+            st.session_state.chat_lang = "tr"
+        if col_lang2.button("🇬🇧 English", use_container_width=True):
+            st.session_state.chat_lang = "en"
+
+        lang = st.session_state.chat_lang
+        st.caption(f"Analiz ID: `{st.session_state.last_analysis_id}` · Dil: {'Türkçe 🇹🇷' if lang == 'tr' else 'English 🇬🇧'}")
 
         for msg in st.session_state.chat_messages:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
-        if prompt := st.chat_input("Bu kod neden riskli?"):
+        placeholder = "Bu kod neden riskli?" if lang == "tr" else "Why is this code risky?"
+
+        if prompt := st.chat_input(placeholder):
+            lang_instruction = (
+                "\n\n[Lütfen Türkçe cevap ver.]"
+                if lang == "tr"
+                else "\n\n[Please respond in English.]"
+            )
+            full_prompt = prompt + lang_instruction
+
             st.session_state.chat_messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
 
             with st.chat_message("assistant"):
-                with st.spinner("Yanıt üretiliyor..."):
+                with st.spinner("Yanıt üretiliyor..." if lang == "tr" else "Generating response..."):
                     response = call_chat({
                         "analysis_id":  st.session_state.last_analysis_id,
-                        "message":      prompt,
+                        "message":      full_prompt,
                         "llm_provider": llm_provider if llm_provider != "none" else "openai",
                     })
 
