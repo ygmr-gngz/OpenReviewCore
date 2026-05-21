@@ -10,65 +10,114 @@ st.set_page_config(
 st.markdown("""
 <style>
 [data-testid="stSidebar"] { background-color: #0f1117 !important; }
-[data-testid="stSidebar"] .stSelectbox label { 
-    color: #6b6f8a !important; 
-    font-size: 10px !important; 
-    text-transform: uppercase; 
-    letter-spacing: .6px; 
+[data-testid="stSidebar"] .stSelectbox label {
+    color: #6b6f8a !important;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    letter-spacing: .6px;
 }
 [data-testid="stSidebar"] .stSelectbox div { color: #c0c0d8 !important; }
-[data-testid="stSidebar"] p { color: #c0c0d8 !important; }
 [data-testid="stSidebar"] .stDivider { border-color: #2a2d3e !important; }
-.stTabs [data-baseweb="tab-list"] { gap: 4px; border-bottom: 0.5px solid #2a2d3e; }
-.stTabs [data-baseweb="tab"] { 
-    background: transparent; 
-    border-radius: 6px; 
-    padding: 5px 12px; 
-    color: #6b6f8a; 
-    font-size: 12px; 
+.stTabs [data-baseweb="tab-list"] {
+    gap: 4px;
+    border-bottom: 0.5px solid #2a2d3e;
+    padding-top: 10px !important;
+    margin-top: 8px !important;
 }
-.stTabs [aria-selected="true"] { 
-    background: #EEEDFE !important; 
-    color: #534AB7 !important; 
-    border-color: #AFA9EC !important; 
+.stTabs [data-baseweb="tab"] {
+    background: transparent;
+    border-radius: 6px;
+    padding: 6px 14px;
+    color: #6b6f8a !important;
+    font-size: 13px !important;
 }
-div[data-testid="metric-container"] { 
-    background: #1a1d2e; 
-    border: 0.5px solid #2a2d3e; 
-    border-radius: 10px; 
-    padding: 12px 16px; 
+.stTabs [data-baseweb="tab"] p {
+    color: #6b6f8a !important;
+    font-size: 13px !important;
 }
-div[data-testid="metric-container"] label { 
-    font-size: 10px !important; 
-    text-transform: uppercase; 
-    letter-spacing: .5px; 
-    color: #6b6f8a !important; 
+.stTabs [aria-selected="true"] {
+    background: #EEEDFE !important;
+    color: #534AB7 !important;
+    border-color: #AFA9EC !important;
 }
-div[data-testid="metric-container"] [data-testid="stMetricValue"] { 
-    font-size: 24px !important; 
+.stTabs [aria-selected="true"] p {
+    color: #534AB7 !important;
+}
+div[data-testid="metric-container"] {
+    background: #1a1d2e;
+    border: 0.5px solid #2a2d3e;
+    border-radius: 10px;
+    padding: 12px 16px;
+}
+div[data-testid="metric-container"] label {
+    font-size: 10px !important;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: #6b6f8a !important;
+}
+div[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    font-size: 24px !important;
     font-weight: 500 !important;
     color: #e0e0f0 !important;
 }
-.stTextArea textarea { 
-    background: #1a1d2e !important; 
-    color: #e0e0e0 !important; 
-    font-family: monospace; 
-    border: 0.5px solid #2a2d3e !important; 
+.stTextArea textarea {
+    background: #1a1d2e !important;
+    color: #e0e0e0 !important;
+    font-family: monospace;
+    border: 0.5px solid #2a2d3e !important;
 }
-.stTextInput input { 
-    background: #1a1d2e !important; 
-    color: #e0e0e0 !important; 
-    border: 0.5px solid #2a2d3e !important; 
+.stTextInput input {
+    background: #1a1d2e !important;
+    color: #e0e0e0 !important;
+    border: 0.5px solid #2a2d3e !important;
 }
-.stButton button { 
-    background: #EEEDFE !important; 
-    color: #534AB7 !important; 
-    border: 0.5px solid #AFA9EC !important; 
-    border-radius: 6px !important; 
+.stButton button {
+    background: #EEEDFE !important;
+    color: #534AB7 !important;
+    border: 0.5px solid #AFA9EC !important;
+    border-radius: 6px !important;
 }
 .stButton button:hover { background: #CECBF6 !important; }
-.block-container { padding-top: 1.5rem !important; }
-.stChatMessage { background: #1a1d2e !important; border: 0.5px solid #2a2d3e !important; }
+.block-container { padding-top: 2rem !important; }
+[data-testid="stChatMessage"] {
+    background: #1a1d2e !important;
+    border: 0.5px solid #2a2d3e !important;
+    border-radius: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-bottom: 8px !important;
+}
+[data-testid="stChatMessageContent"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    color: #e0e0f0 !important;
+}
+[data-testid="stChatMessageContent"] p {
+    color: #e0e0f0 !important;
+    line-height: 1.7 !important;
+}
+[data-testid="stChatMessageContent"] code {
+    background: #2a2d3e !important;
+    color: #a0c0ff !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+}
+[data-testid="stChatMessageContent"] pre {
+    background: #2a2d3e !important;
+    border: 0.5px solid #3a3d4e !important;
+    border-radius: 6px !important;
+    padding: 10px !important;
+    overflow-x: auto !important;
+    width: 100% !important;
+}
+.stChatInputContainer {
+    background: #1a1d2e !important;
+    border: 0.5px solid #2a2d3e !important;
+    border-radius: 8px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -141,7 +190,7 @@ def render_file_item(path: str, score: float, level: str):
   <span style="font-size:13px;font-weight:500;color:{txt_color};flex-shrink:0">{score:.1f}</span>
   <span style="font-size:10px;color:#6b6f8a;flex-shrink:0">/ 100</span>
   <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;
-        background:{bg_color};color:{txt_color};flex-shrink:0;border:0.5px solid {txt_color}33">
+        background:{bg_color};color:{txt_color};flex-shrink:0;border:0.5px solid {txt_color}44">
     {risk_label(level)}
   </span>
 </div>
@@ -170,7 +219,7 @@ for key, default in [
     ("history", []),
     ("last_result", None),
     ("last_analysis_id", None),
-    ("last_analysis_data", None),   # chat için tam analiz verisi
+    ("last_analysis_data", None),
     ("chat_messages", []),
     ("chat_lang", "tr"),
 ]:
@@ -207,11 +256,11 @@ with st.sidebar:
      letter-spacing:.6px;margin-bottom:8px">Son analizler</div>
 """, unsafe_allow_html=True)
         for item in st.session_state.history[-5:][::-1]:
-            level  = item.get("risk_level", "?")
-            name   = item.get("name", "analiz")
-            clr    = risk_color(level)
-            bg     = risk_bg(level)
-            label  = risk_label(level)
+            level = item.get("risk_level", "?")
+            name  = item.get("name", "analiz")
+            clr   = risk_color(level)
+            bg    = risk_bg(level)
+            label = risk_label(level)
             st.markdown(f"""
 <div style="padding:6px 0;border-bottom:0.5px solid #1e2130">
   <div style="font-size:11px;color:#c0c0d8;margin-bottom:5px;white-space:nowrap;
@@ -225,10 +274,26 @@ with st.sidebar:
 
 
 # ─────────────────────────────────────────
+# BAŞLIK
+# ─────────────────────────────────────────
+
+st.markdown("""
+<div style="padding: 0 0 1rem 0;">
+  <h2 style="color:#e0e0f0;font-size:20px;font-weight:500;margin:0">
+    Kod Risk Analizi
+  </h2>
+  <p style="color:#6b6f8a;font-size:13px;margin:4px 0 0 0">
+    Statik analiz · LLM reasoning · GitHub repo tarama
+  </p>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────
 # SEKMELER
 # ─────────────────────────────────────────
 
-tab1, tab2, tab3 = st.tabs(["💻 Kod", "🐙 Repo", "💬 Sohbet"])
+tab1, tab2, tab3 = st.tabs(["💻 Kod Analizi", "🐙 Repo Analizi", "💬 Sohbet"])
 
 
 # ── TAB 1: KOD ANALİZİ ──────────────────
@@ -254,10 +319,10 @@ with tab1:
             if "error" in data:
                 st.error(f"Hata: {data['error']}")
             else:
-                st.session_state.last_result       = data
-                st.session_state.last_analysis_id  = data.get("analysis_id")
+                st.session_state.last_result        = data
+                st.session_state.last_analysis_id   = data.get("analysis_id")
                 st.session_state.last_analysis_data = data.get("result", {})
-                st.session_state.chat_messages     = []
+                st.session_state.chat_messages      = []
 
                 risk = data.get("result", {}).get("static_result", {}).get("risk_analysis", {})
                 st.session_state.history.append({
@@ -287,7 +352,7 @@ with tab1:
             st.markdown("<div style='font-size:10px;color:#6b6f8a;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px'>Risk dağılımı</div>", unsafe_allow_html=True)
             c1, c2, c3, c4, c5 = st.columns(5)
             c1.metric("Güvenlik",   f"{breakdown.get('security_risk', 0):.1f}")
-            c2.metric("Maintain.",  f"{breakdown.get('maintainability_risk', 0):.1f}")
+            c2.metric("Maintainability",  f"{breakdown.get('maintainability_risk', 0):.1f}")
             c3.metric("Complexity", f"{breakdown.get('complexity_risk', 0):.1f}")
             c4.metric("Bandit",     f"{breakdown.get('bandit_risk', 0):.1f}")
             c5.metric("Ruff",       f"{breakdown.get('ruff_risk', 0):.1f}")
@@ -341,9 +406,9 @@ with tab2:
 
             level = repo_summary.get("repo_risk_level", "?")
             col1, col2, col3 = st.columns(3)
-            col1.metric("🛡️ Risk seviyesi",  f"{risk_emoji(level)} {risk_label(level)}")
-            col2.metric("📊 Ortalama skor",  f"{repo_summary.get('average_risk_score', 0):.1f} / 100")
-            col3.metric("📁 Analiz edilen",  f"{repo_summary.get('total_files', 0)} dosya")
+            col1.metric("🛡️ Risk seviyesi", f"{risk_emoji(level)} {risk_label(level)}")
+            col2.metric("📊 Ortalama skor", f"{repo_summary.get('average_risk_score', 0):.1f} / 100")
+            col3.metric("📁 Analiz edilen", f"{repo_summary.get('total_files', 0)} dosya")
 
             repo_llm = result.get("repo_llm_summary", {})
             if repo_llm and repo_llm.get("status") == "success":
@@ -366,7 +431,10 @@ with tab3:
             st.session_state.chat_lang = "en"
 
         lang = st.session_state.chat_lang
-        st.caption(f"Analiz ID: `{st.session_state.last_analysis_id}` · {'Türkçe 🇹🇷' if lang == 'tr' else 'English 🇬🇧'}")
+        st.caption(
+            f"Analiz ID: `{st.session_state.last_analysis_id}` · "
+            f"{'Türkçe 🇹🇷' if lang == 'tr' else 'English 🇬🇧'}"
+        )
 
         for msg in st.session_state.chat_messages:
             with st.chat_message(msg["role"]):
@@ -388,8 +456,6 @@ with tab3:
 
             with st.chat_message("assistant"):
                 with st.spinner("Yanıt üretiliyor..." if lang == "tr" else "Generating response..."):
-                    # Railway memory store sıfırlanabilir
-                    # Önce analysis_id ile dene, hata alırsan local data ile fallback yap
                     chat_provider = llm_provider if llm_provider != "none" else "openai"
 
                     response = call_chat({
@@ -398,8 +464,7 @@ with tab3:
                         "llm_provider": chat_provider,
                     })
 
-                    # 404 alırsak — Railway store sıfırlanmış, local data ile fallback
-                    if "error" in response and "404" in str(response.get("error", "")):
+                    if "error" in response:
                         from app.services.chat_service import chat_with_analysis
                         try:
                             reply = chat_with_analysis(
