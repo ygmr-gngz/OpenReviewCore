@@ -242,6 +242,8 @@ pytest tests/ -v
 
 ## Yol Haritası
 
+## Yol Haritası
+
 - [x] FastAPI backend — modüler servis mimarisi
 - [x] Cyclomatic Complexity ve Maintainability Index (Radon)
 - [x] Halstead Metrikleri ve Raw Metrics
@@ -254,12 +256,12 @@ pytest tests/ -v
 - [x] Otomatik testler
 - [x] LLM akıl yürütme katmanı (OpenAI + Ollama)
 - [x] Hybrid analiz modu (statik + LLM)
-- [x] Analiz sonrası sohbet katmanı
-- [ ] GitHub repo analizi
+- [x] Analiz sonrası sohbet katmanı (TR/EN dil desteği)
+- [x] GitHub repo analizi (recursive dosya tarama, repo risk skoru)
+- [x] GitHub Actions CI/CD
+- [x] Railway deployment (canlı API)
+- [x] Streamlit UI (kod analizi, repo analizi, sohbet)
 - [ ] PostgreSQL depolama
-- [ ] GitHub Actions CI/CD
-- [ ] Railway deployment
-- [ ] Streamlit veya React arayüzü
 - [ ] Agent mimarisi — otonom kod inceleme
 
 ---
