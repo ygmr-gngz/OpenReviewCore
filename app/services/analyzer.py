@@ -14,6 +14,11 @@ def analyze_code(
     analysis_mode: str = "static",
     llm_provider: str = "none",
 ) -> dict:
+    #Ollama Railway'de çalışmaz — kod analizinde static'e düş
+    if llm_provider == "ollama":
+        analysis_mode = "static"
+        llm_provider  = "none"
+    
     code = clean_code(code)
 
     if is_empty(code):
