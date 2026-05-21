@@ -186,8 +186,8 @@ openreviewcore/
 │   │   ├── analyzer.py      # Orkestrasyon — tüm servisleri yönetir
 │   │   ├── metrics.py       # Radon, Ruff, Bandit, güvenlik örüntüleri
 │   │   ├── risk_engine.py   # Ağırlıklı risk skoru hesaplama
-│   │   ├── llm_service.py   # LLM entegrasyonu (yakında aktif)
-│   │   └── chat_service.py  # Analiz sonrası sohbet katmanı (yakında)
+│   │   ├── llm_service.py   # LLM entegrasyonu 
+│   │   └── chat_service.py  # Analiz sonrası sohbet katmanı 
         └── github_service.py# GitHub repo dosya çekme servisi
 │   │
 │   ├── storage/
