@@ -7,12 +7,13 @@ from app.config import settings, get_status
 from app.schemas import AnalyzeRequest, ChatRequest
 from app.services.analyzer import analyze_code, analyze_repo
 from app.storage.memory_store import MemoryStore
+from app.storage.postgresql_store import PostgreSQLStore
 from app.services.chat_service import chat_with_analysis
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.store = MemoryStore()
+    app.state.store = PostgreSQLStore() if settings.database_url else MemoryStore()
     app.state.status = get_status(settings)
     yield
     app.state.store.clear()
