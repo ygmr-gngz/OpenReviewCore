@@ -25,5 +25,5 @@ httpx>=0.24.0
 
 pydantic-settings>=2.0.0
 # Database
-echo "psycopg2-binary" 
-echo "sqlalchemy" 
+psycopg2-binary
+sqlalchemy
