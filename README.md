@@ -261,7 +261,7 @@ pytest tests/ -v
 - [x] GitHub Actions CI/CD
 - [x] Railway deployment (canlı API)
 - [x] Streamlit UI (kod analizi, repo analizi, sohbet)
-- [ ] PostgreSQL depolama
+- [x] PostgreSQL depolama (Railway entegrasyonu, kalıcı analiz geçmişi)
 - [ ] Agent mimarisi — otonom kod inceleme
 
 ---
