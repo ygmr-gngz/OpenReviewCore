@@ -242,8 +242,6 @@ pytest tests/ -v
 
 ## Yol Haritası
 
-## Yol Haritası
-
 - [x] FastAPI backend — modüler servis mimarisi
 - [x] Cyclomatic Complexity ve Maintainability Index (Radon)
 - [x] Halstead Metrikleri ve Raw Metrics
