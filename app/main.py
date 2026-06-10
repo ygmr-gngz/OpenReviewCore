@@ -16,7 +16,6 @@ async def lifespan(app: FastAPI):
     app.state.store = PostgreSQLStore() if settings.database_url else MemoryStore()
     app.state.status = get_status(settings)
     yield
-    app.state.store.clear()
 
 
 app = FastAPI(

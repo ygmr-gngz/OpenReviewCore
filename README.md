@@ -6,9 +6,9 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white)
 ![Testler](https://img.shields.io/badge/Testler-Geçiyor-brightgreen)
 ![Lisans](https://img.shields.io/badge/Lisans-MIT-green)
-![Durum](https://img.shields.io/badge/Durum-Aktif%20Geliştirme-orange)
+![Durum](https://img.shields.io/badge/Durum-Aktif-success)
 
----
+**🔴 Canlı Demo:** [openreviewcore-production-7f08.up.railway.app/docs](https://openreviewcore-production-7f08.up.railway.app/docs) — Swagger arayüzünden doğrudan deneyebilirsiniz.
 
 ## Ne Yapar?
 
@@ -20,25 +20,27 @@ Tek bir API çağrısıyla şunları öğrenirsin:
 - Bakımının ne kadar zor olduğunu
 - Güvenlik açığı içerip içermediğini
 - Lint sorunları olup olmadığını
-- Genel risk seviyesini: `düşük`, `orta`, `yüksek`, `kritik`
+- Genel risk seviyesini: düşük, orta, yüksek, kritik
 
-Amaç sadece bir LLM'e kod gönderip cevap almak değil — **mühendislik odaklı, açıklanabilir ve ölçülebilir** bir kod inceleme sistemi kurmak.
+Analiz bittikten sonra iş bitmiyor: **analiz ID'si üzerinden sonuçlara Türkçe veya İngilizce soru sorabilirsin** — "en riskli fonksiyon hangisi?", "bu güvenlik bulgusunu nasıl düzeltirim?" gibi.
 
----
+Amaç sadece bir LLM'e kod gönderip cevap almak değil — mühendislik odaklı, açıklanabilir ve ölçülebilir bir kod inceleme sistemi kurmak.
 
 ## Özellikler
 
 - Cyclomatic Complexity, Maintainability Index, Halstead ve Raw Metrics (Radon)
 - Lint ve kod kalitesi analizi (Ruff)
 - Statik güvenlik açığı tespiti (Bandit)
-- Güvenlik örüntüsü taraması (`eval`, `exec`, hardcoded secret vb.)
+- Güvenlik örüntüsü taraması (eval, exec, hardcoded secret vb.)
 - Ağırlıklı risk skorlama sistemi — 0 ile 100 arası
+- Hybrid analiz modu: statik analiz + LLM akıl yürütme (OpenAI / Ollama)
+- Analiz sonrası sohbet katmanı — TR/EN, analiz bağlamını bilerek cevaplar
+- GitHub repo analizi — recursive dosya tarama ve repo risk skoru
+- Kalıcı analiz geçmişi — `DATABASE_URL` tanımlıysa PostgreSQL, yoksa bellek içi depolama
+- Streamlit arayüzü — kod analizi, repo analizi ve sohbet için
 - Modüler servis mimarisi — genişletmesi kolay
 - FastAPI backend — otomatik Swagger dokümantasyonu
-- Docker desteği
-- Hybrid mod desteği: statik analiz + LLM reasoning (yakında)
-
----
+- Docker desteği ve GitHub Actions CI
 
 ## Hızlı Başlangıç
 
@@ -51,8 +53,8 @@ Amaç sadece bir LLM'e kod gönderip cevap almak değil — **mühendislik odakl
 
 ```bash
 # Repoyu klonla
-git clone https://github.com/kullaniciadin/openreviewcore.git
-cd openreviewcore
+git clone https://github.com/ygmr-gngz/OpenReviewCore.git
+cd OpenReviewCore
 
 # Sanal ortam oluştur
 python -m venv venv
@@ -66,8 +68,15 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-API adresi: `http://127.0.0.1:8000`
-Swagger dokümantasyonu: `http://127.0.0.1:8000/docs`
+API adresi: http://127.0.0.1:8000
+Swagger dokümantasyonu: http://127.0.0.1:8000/docs
+
+### Streamlit Arayüzü (opsiyonel)
+
+```bash
+pip install -r frontend/requirements.txt
+streamlit run frontend/app.py
+```
 
 ### Docker ile Çalıştır
 
@@ -76,11 +85,9 @@ docker build -t openreviewcore .
 docker run -p 8000:8000 openreviewcore
 ```
 
----
-
 ## Kullanım
 
-### Kod Analizi
+### 1. Kod Analizi
 
 ```bash
 curl -X POST http://127.0.0.1:8000/analyze \
@@ -111,11 +118,7 @@ curl -X POST http://127.0.0.1:8000/analyze \
             "difficulty": 4.5,
             "bugs_delivered": 0.015
           },
-          "raw": {
-            "loc": 4,
-            "sloc": 4,
-            "comments": 0
-          }
+          "raw": { "loc": 4, "sloc": 4, "comments": 0 }
         },
         "security_patterns": {
           "detected_patterns": ["eval_usage"],
@@ -124,12 +127,7 @@ curl -X POST http://127.0.0.1:8000/analyze \
         "bandit": {
           "issue_count": 1,
           "issues": [
-            {
-              "test_id": "B307",
-              "severity": "MEDIUM",
-              "confidence": "HIGH",
-              "line": 3
-            }
+            { "test_id": "B307", "severity": "MEDIUM", "confidence": "HIGH", "line": 3 }
           ]
         }
       },
@@ -149,14 +147,38 @@ curl -X POST http://127.0.0.1:8000/analyze \
 }
 ```
 
----
+### 2. Analizle Sohbet Et
+
+Yanıttaki analiz ID'sini kullanarak sonuçlar hakkında Türkçe veya İngilizce soru sorabilirsin:
+
+```bash
+curl -X POST http://127.0.0.1:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "analysis_id": "ANALIZ_ID_BURAYA",
+    "message": "En riskli kısım neresi ve nasıl düzeltirim?",
+    "llm_provider": "openai"
+  }'
+```
+
+Sistem analiz bağlamını bilerek cevap üretir — genel bir chatbot değil, senin analizini konuşan bir asistandır.
+
+### 3. Analiz Geçmişi
+
+```bash
+# Son analizleri listele
+curl http://127.0.0.1:8000/history?limit=10
+
+# Belirli bir analizi getir
+curl http://127.0.0.1:8000/history/ANALIZ_ID_BURAYA
+```
 
 ## Risk Skorlama
 
 Risk skoru beş kaynağın ağırlıklı toplamıdır:
 
 | Kaynak | Ağırlık |
-|---|---|
+| --- | --- |
 | Cyclomatic Complexity | %25 |
 | Maintainability Index | %25 |
 | Güvenlik Örüntüleri | %30 |
@@ -164,52 +186,55 @@ Risk skoru beş kaynağın ağırlıklı toplamıdır:
 | Bandit Güvenlik | %10 |
 
 | Skor | Seviye |
-|---|---|
-| 0 – 39 | `düşük` |
-| 40 – 74 | `orta` |
-| 75 – 89 | `yüksek` |
-| 90 – 100 | `kritik` |
-
----
+| --- | --- |
+| 0 – 39 | düşük |
+| 40 – 74 | orta |
+| 75 – 89 | yüksek |
+| 90 – 100 | kritik |
 
 ## Proje Yapısı
 
 ```
-openreviewcore/
+OpenReviewCore/
 │
 ├── app/
-│   ├── main.py              # FastAPI uygulaması ve endpointler
-│   ├── schemas.py           # Request / response modelleri
-│   ├── config.py            # Ortam değişkenleri ve ayarlar
+│   ├── main.py                  # FastAPI uygulaması ve endpointler
+│   ├── schemas.py               # Request / response modelleri
+│   ├── config.py                # Ortam değişkenleri ve ayarlar
 │   │
 │   ├── services/
-│   │   ├── analyzer.py      # Orkestrasyon — tüm servisleri yönetir
-│   │   ├── metrics.py       # Radon, Ruff, Bandit, güvenlik örüntüleri
-│   │   ├── risk_engine.py   # Ağırlıklı risk skoru hesaplama
-│   │   ├── llm_service.py   # LLM entegrasyonu 
-│   │   └── chat_service.py  # Analiz sonrası sohbet katmanı 
-        └── github_service.py# GitHub repo dosya çekme servisi
+│   │   ├── analyzer.py          # Orkestrasyon — tüm servisleri yönetir
+│   │   ├── metrics.py           # Radon, Ruff, Bandit, güvenlik örüntüleri
+│   │   ├── risk_engine.py       # Ağırlıklı risk skoru hesaplama
+│   │   ├── llm_service.py       # LLM entegrasyonu (OpenAI / Ollama)
+│   │   ├── chat_service.py      # Analiz sonrası sohbet katmanı (TR/EN)
+│   │   └── github_service.py    # GitHub repo dosya çekme servisi
 │   │
 │   ├── storage/
-│   │   └── memory_store.py  # Geçici analiz saklama (Faz 9'da PostgreSQL)
+│   │   ├── memory_store.py      # Bellek içi depolama (DATABASE_URL yoksa)
+│   │   └── postgresql_store.py  # Kalıcı PostgreSQL depolama
 │   │
 │   └── utils/
-│       └── code_cleaner.py  # Kod temizleme yardımcıları
+│       └── code_cleaner.py      # Kod temizleme yardımcıları
+│
+├── frontend/
+│   ├── app.py                   # Streamlit arayüzü
+│   └── requirements.txt
 │
 ├── tests/
 │   ├── test_health.py
 │   └── test_analyze.py
 │
 ├── examples/
-│   └── risky_code.py        # Yüksek riskli örnek kod
+│   └── risky_code.py            # Yüksek riskli örnek kod
 │
+├── .github/workflows/ci.yml     # GitHub Actions CI
 ├── requirements.txt
 ├── Dockerfile
 ├── .env.example
+├── LICENSE
 └── README.md
 ```
-
----
 
 ## Ortam Değişkenleri
 
@@ -220,17 +245,16 @@ cp .env.example .env
 ```
 
 | Değişken | Açıklama | Varsayılan |
-|---|---|---|
-| `API_HOST` | Sunucu adresi | `0.0.0.0` |
-| `API_PORT` | Sunucu portu | `8000` |
-| `DEBUG` | Debug modu | `false` |
-| `OPENAI_API_KEY` | OpenAI API anahtarı | — |
-| `OPENAI_MODEL` | OpenAI model adı | `gpt-4o-mini` |
-| `OLLAMA_BASE_URL` | Ollama servis adresi | `http://localhost:11434` |
-| `OLLAMA_MODEL` | Ollama model adı | `llama3` |
-| `MAX_FILE_SIZE` | Maksimum kod boyutu (karakter) | `50000` |
-
----
+| --- | --- | --- |
+| API_HOST | Sunucu adresi | 0.0.0.0 |
+| API_PORT | Sunucu portu | 8000 |
+| DEBUG | Debug modu | false |
+| DATABASE_URL | PostgreSQL bağlantı adresi — tanımlıysa kalıcı depolama aktif olur | — |
+| OPENAI_API_KEY | OpenAI API anahtarı | — |
+| OPENAI_MODEL | OpenAI model adı | gpt-4o-mini |
+| OLLAMA_BASE_URL | Ollama servis adresi | http://localhost:11434 |
+| OLLAMA_MODEL | Ollama model adı | llama3 |
+| MAX_FILE_SIZE | Maksimum kod boyutu (karakter) | 50000 |
 
 ## Testleri Çalıştır
 
@@ -238,9 +262,9 @@ cp .env.example .env
 pytest tests/ -v
 ```
 
----
-
 ## Yol Haritası
+
+Tamamlananlar:
 
 - [x] FastAPI backend — modüler servis mimarisi
 - [x] Cyclomatic Complexity ve Maintainability Index (Radon)
@@ -260,13 +284,18 @@ pytest tests/ -v
 - [x] Railway deployment (canlı API)
 - [x] Streamlit UI (kod analizi, repo analizi, sohbet)
 - [x] PostgreSQL depolama (Railway entegrasyonu, kalıcı analiz geçmişi)
-- [ ] Agent mimarisi — otonom kod inceleme
 
----
+Sırada:
+
+- [ ] Claude API entegrasyonu — daha derin LLM incelemesi
+- [ ] GitHub PR webhook — pull request'lere otomatik analiz yorumları
+- [ ] API rate limiting — canlı demo için istek sınırlandırma
+- [ ] JavaScript / TypeScript dil desteği
+- [ ] Agent mimarisi — otonom kod inceleme
 
 ## Katkıda Bulunma
 
-Katkılar memnuniyetle karşılanır.
+Katkılar memnuniyetle karşılanır — her seviyeden öneri, issue ve PR'a açığız.
 
 1. Repoyu fork'la
 2. Özellik dalı oluştur: `git checkout -b ozellik/ozellik-adin`
@@ -274,9 +303,9 @@ Katkılar memnuniyetle karşılanır.
 4. Testleri çalıştır: `pytest tests/ -v`
 5. Pull request aç — değişikliği açıkla
 
-**Kod stili:** `ruff check .` komutunu PR öncesi çalıştır.
+Kod stili: `ruff check .` komutunu PR öncesi çalıştır.
 
----
+Nereden başlayacağını bilmiyorsan [Issues](https://github.com/ygmr-gngz/OpenReviewCore/issues) sayfasındaki `good first issue` etiketli konulara bakabilirsin.
 
 ## Lisans
 
